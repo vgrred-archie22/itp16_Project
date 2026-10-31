@@ -20,6 +20,20 @@
   const clearCompletedBtn = $('clear-completed');
   const alertBox = $('alert-box');
   const themeToggle = $('theme-toggle');
+  const authPanel = $('auth-panel');
+  const authForm = $('auth-form');
+  const authUsername = $('auth-username');
+  const authPassword = $('auth-password');
+  const authTitle = $('auth-title');
+  const authDescription = $('auth-description');
+  const authSubmit = $('auth-submit');
+  const authModeToggle = $('auth-mode-toggle');
+  const tasksCard = $('tasks-card');
+  const accountControls = $('account-controls');
+  const accountName = $('account-name');
+  const logoutButton = $('logout-button');
+  const footerTip = $('footer-tip');
+  let authMode = 'login';
 
   // Initialize Theme
   function initTheme() {
@@ -59,7 +73,12 @@
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      throw new Error(data.error || 'Server request failed');
+      const error = new Error(data.error || 'Server request failed');
+      error.status = response.status;
+      if (response.status === 401 && endpoint.startsWith('/api/todos')) {
+        setSignedOut('Your session expired. Please sign in again.');
+      }
+      throw error;
     }
 
     return data;
@@ -76,6 +95,46 @@
     alertBox.style.display = 'block';
   }
 
+  function setSignedOut(message = '') {
+    todos = [];
+    authPanel.hidden = false;
+    tasksCard.hidden = true;
+    accountControls.hidden = true;
+    footerTip.textContent = 'Sign in to access your private task list.';
+    render();
+    showError(message);
+  }
+
+  function setSignedIn(user) {
+    authPanel.hidden = true;
+    tasksCard.hidden = false;
+    accountControls.hidden = false;
+    accountName.textContent = user.username;
+    footerTip.textContent = 'Tip: Double-click any task title to edit it inline.';
+    showError(null);
+  }
+
+  function updateAuthMode() {
+    const registering = authMode === 'register';
+    authTitle.textContent = registering ? 'Create account' : 'Sign in';
+    authDescription.textContent = registering
+      ? 'Create an account to keep your tasks private.'
+      : 'Sign in to see your private task list.';
+    authSubmit.textContent = registering ? 'Create account' : 'Sign in';
+    authModeToggle.textContent = registering ? 'Already have an account? Sign in' : 'Create an account';
+    authPassword.autocomplete = registering ? 'new-password' : 'current-password';
+  }
+
+  async function checkSession() {
+    try {
+      const user = await api('/api/auth/me');
+      setSignedIn(user);
+      await fetchTodos();
+    } catch (err) {
+      if (err.status !== 401) showError('Could not check your sign-in: ' + err.message);
+    }
+  }
+
   // Fetch Todos
   async function fetchTodos() {
     try {
@@ -83,7 +142,7 @@
       todos = await api('/api/todos');
       render();
     } catch (err) {
-      showError('Failed to load tasks: ' + err.message);
+      if (err.status !== 401) showError('Failed to load tasks: ' + err.message);
     }
   }
 
@@ -343,7 +402,40 @@
   clearCompletedBtn.addEventListener('click', clearCompleted);
   themeToggle.addEventListener('click', toggleTheme);
 
+  authModeToggle.addEventListener('click', () => {
+    authMode = authMode === 'login' ? 'register' : 'login';
+    updateAuthMode();
+  });
+
+  authForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    try {
+      showError(null);
+      const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+      const user = await api(endpoint, 'POST', {
+        username: authUsername.value,
+        password: authPassword.value,
+      });
+      authPassword.value = '';
+      setSignedIn(user);
+      await fetchTodos();
+    } catch (err) {
+      showError(err.message);
+    }
+  });
+
+  logoutButton.addEventListener('click', async () => {
+    try {
+      await api('/api/auth/logout', 'POST');
+      setSignedOut();
+      authPassword.value = '';
+    } catch (err) {
+      showError('Failed to log out: ' + err.message);
+    }
+  });
+
   // Initialize
   initTheme();
-  fetchTodos();
+  updateAuthMode();
+  checkSession();
 })();

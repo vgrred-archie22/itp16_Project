@@ -9,12 +9,14 @@ try {
   process.exit(1);
 }
 const todoRoutes = require('./routes/todoRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use('/api/auth', authRoutes);
 app.use('/api/todos', todoRoutes);
 
 app.use((req, res) => {

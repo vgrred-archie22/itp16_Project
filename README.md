@@ -41,6 +41,12 @@ itp16_Project/
 
 No separate database server is needed. The app creates `data/todos.sqlite` and its tables automatically the first time it starts.
 
+### User accounts and task privacy
+
+Users can register with a username (3–32 letters, numbers, or underscores) and a password (12–128 characters). Each account can only view and change its own tasks. The first account created claims any existing tasks that do not yet have an owner; later accounts start with an empty list. Database schema changes are applied automatically on startup.
+
+Registration is open to anyone who can reach the app, and there is no password-reset or email-verification flow. Use HTTPS before entering real passwords or exposing the app publicly. In production, set `NODE_ENV=production` so session cookies are marked Secure; serve the app over HTTPS for those cookies to work.
+
 ### 2. Optional Configuration
 Copy `.env.example` to `.env` to change the database file location or server port:
 ```bash

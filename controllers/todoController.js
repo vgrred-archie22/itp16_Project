@@ -5,8 +5,8 @@ const VALID_PRIORITIES = ['low', 'medium', 'high'];
 exports.getTodos = async (req, res, next) => {
   try {
     const { status, priority, search } = req.query;
-    let query = 'SELECT id, title, done, priority, created_at, updated_at FROM todos WHERE 1=1';
-    const params = [];
+    let query = 'SELECT id, title, done, priority, created_at, updated_at FROM todos WHERE user_id = ?';
+    const params = [req.user.id];
 
     if (status === 'active') {
       query += ' AND done = 0';
@@ -52,8 +52,8 @@ exports.createTodo = async (req, res, next) => {
     }
 
     const result = db.prepare(
-      'INSERT INTO todos (title, priority) VALUES (?, ?)'
-    ).run(title, priority);
+      'INSERT INTO todos (user_id, title, priority) VALUES (?, ?, ?)'
+    ).run(req.user.id, title, priority);
 
     const row = db.prepare(
       'SELECT id, title, done, priority, created_at, updated_at FROM todos WHERE id = ?'
@@ -75,7 +75,7 @@ exports.updateTodo = async (req, res, next) => {
       return res.status(400).json({ error: 'Invalid task ID' });
     }
 
-    const current = db.prepare('SELECT * FROM todos WHERE id = ?').get(id);
+    const current = db.prepare('SELECT * FROM todos WHERE id = ? AND user_id = ?').get(id, req.user.id);
     if (!current) {
       return res.status(404).json({ error: 'Task not found' });
     }
@@ -105,8 +105,8 @@ exports.updateTodo = async (req, res, next) => {
     }
 
     db.prepare(
-      'UPDATE todos SET title = ?, done = ?, priority = ? WHERE id = ?'
-    ).run(newTitle, newDone, newPriority, id);
+      'UPDATE todos SET title = ?, done = ?, priority = ? WHERE id = ? AND user_id = ?'
+    ).run(newTitle, newDone, newPriority, id, req.user.id);
 
     const updated = db.prepare(
       'SELECT id, title, done, priority, created_at, updated_at FROM todos WHERE id = ?'
@@ -128,7 +128,7 @@ exports.deleteTodo = async (req, res, next) => {
       return res.status(400).json({ error: 'Invalid task ID' });
     }
 
-    const result = db.prepare('DELETE FROM todos WHERE id = ?').run(id);
+    const result = db.prepare('DELETE FROM todos WHERE id = ? AND user_id = ?').run(id, req.user.id);
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Task not found' });
     }
@@ -141,7 +141,7 @@ exports.deleteTodo = async (req, res, next) => {
 
 exports.clearCompleted = async (req, res, next) => {
   try {
-    const result = db.prepare('DELETE FROM todos WHERE done = 1').run();
+    const result = db.prepare('DELETE FROM todos WHERE done = 1 AND user_id = ?').run(req.user.id);
     res.json({ ok: true, deletedCount: result.changes });
   } catch (err) {
     next(err);

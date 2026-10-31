@@ -13,12 +13,30 @@
         <span style="font-size: 1.8rem;">✅</span>
         <h1>Task Master</h1>
       </div>
+      <div id="account-controls" class="account-controls" hidden>
+        <span id="account-name"></span>
+        <button id="logout-button" class="theme-toggle" type="button">Log out</button>
+      </div>
       <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌙 Dark</button>
     </header>
 
     <div id="alert-box" class="alert alert-error" role="alert"></div>
 
-    <main class="card">
+    <section id="auth-panel" class="card auth-card">
+      <h2 id="auth-title">Sign in</h2>
+      <p id="auth-description">Sign in to see your private task list.</p>
+      <form id="auth-form">
+        <label for="auth-username">Username</label>
+        <input id="auth-username" class="input-field" type="text" minlength="3" maxlength="32" pattern="[A-Za-z0-9_]+" autocomplete="username" required>
+        <label for="auth-password">Password</label>
+        <input id="auth-password" class="input-field" type="password" minlength="12" maxlength="128" autocomplete="current-password" required>
+        <button id="auth-submit" class="btn btn-primary" type="submit">Sign in</button>
+      </form>
+      <button id="auth-mode-toggle" class="auth-mode-toggle" type="button">Create an account</button>
+      <p class="auth-note">Passwords must be at least 12 characters. Each account has its own tasks.</p>
+    </section>
+
+    <main id="tasks-card" class="card" hidden>
       <form id="task-form" class="todo-form">
         <input 
           type="text" 
@@ -72,7 +90,7 @@
     </main>
 
     <footer>
-      <p>Tip: Double-click any task title to edit it inline.</p>
+      <p id="footer-tip">Tip: Double-click any task title to edit it inline.</p>
     </footer>
   </div>
 
