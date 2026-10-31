@@ -1,14 +1,15 @@
-const mysql = require('mysql2/promise');
+const fs = require('node:fs');
+const path = require('node:path');
+const { DatabaseSync } = require('node:sqlite');
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  port: Number(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+const projectRoot = path.join(__dirname, '..');
+const databasePath = process.env.SQLITE_DB_PATH
+  ? path.resolve(projectRoot, process.env.SQLITE_DB_PATH)
+  : path.join(projectRoot, 'data', 'todos.sqlite');
 
-module.exports = pool;
+fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+
+const db = new DatabaseSync(databasePath);
+db.exec(fs.readFileSync(path.join(projectRoot, 'schema.sql'), 'utf8'));
+
+module.exports = { db, databasePath };

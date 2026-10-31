@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+const { db } = require('../config/db');
 
 const VALID_PRIORITIES = ['low', 'medium', 'high'];
 
@@ -26,7 +26,7 @@ exports.getTodos = async (req, res, next) => {
 
     query += ` ORDER BY done ASC, CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 END, id DESC`;
 
-    const [rows] = await pool.query(query, params);
+    const rows = db.prepare(query).all(...params);
 
     const todos = rows.map((row) => ({
       ...row,
@@ -51,19 +51,17 @@ exports.createTodo = async (req, res, next) => {
       priority = 'medium';
     }
 
-    const [result] = await pool.query(
-      'INSERT INTO todos (title, priority) VALUES (?, ?)',
-      [title, priority]
-    );
+    const result = db.prepare(
+      'INSERT INTO todos (title, priority) VALUES (?, ?)'
+    ).run(title, priority);
 
-    const [rows] = await pool.query(
-      'SELECT id, title, done, priority, created_at, updated_at FROM todos WHERE id = ?',
-      [result.insertId]
-    );
+    const row = db.prepare(
+      'SELECT id, title, done, priority, created_at, updated_at FROM todos WHERE id = ?'
+    ).get(result.lastInsertRowid);
 
     res.status(201).json({
-      ...rows[0],
-      done: Boolean(rows[0].done),
+      ...row,
+      done: Boolean(row.done),
     });
   } catch (err) {
     next(err);
@@ -77,12 +75,11 @@ exports.updateTodo = async (req, res, next) => {
       return res.status(400).json({ error: 'Invalid task ID' });
     }
 
-    const [existing] = await pool.query('SELECT * FROM todos WHERE id = ?', [id]);
-    if (existing.length === 0) {
+    const current = db.prepare('SELECT * FROM todos WHERE id = ?').get(id);
+    if (!current) {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    const current = existing[0];
     let newTitle = current.title;
     let newDone = current.done;
     let newPriority = current.priority;
@@ -107,19 +104,17 @@ exports.updateTodo = async (req, res, next) => {
       newPriority = prio;
     }
 
-    await pool.query(
-      'UPDATE todos SET title = ?, done = ?, priority = ? WHERE id = ?',
-      [newTitle, newDone, newPriority, id]
-    );
+    db.prepare(
+      'UPDATE todos SET title = ?, done = ?, priority = ? WHERE id = ?'
+    ).run(newTitle, newDone, newPriority, id);
 
-    const [updatedRows] = await pool.query(
-      'SELECT id, title, done, priority, created_at, updated_at FROM todos WHERE id = ?',
-      [id]
-    );
+    const updated = db.prepare(
+      'SELECT id, title, done, priority, created_at, updated_at FROM todos WHERE id = ?'
+    ).get(id);
 
     res.json({
-      ...updatedRows[0],
-      done: Boolean(updatedRows[0].done),
+      ...updated,
+      done: Boolean(updated.done),
     });
   } catch (err) {
     next(err);
@@ -133,8 +128,8 @@ exports.deleteTodo = async (req, res, next) => {
       return res.status(400).json({ error: 'Invalid task ID' });
     }
 
-    const [result] = await pool.query('DELETE FROM todos WHERE id = ?', [id]);
-    if (result.affectedRows === 0) {
+    const result = db.prepare('DELETE FROM todos WHERE id = ?').run(id);
+    if (result.changes === 0) {
       return res.status(404).json({ error: 'Task not found' });
     }
 
@@ -146,8 +141,8 @@ exports.deleteTodo = async (req, res, next) => {
 
 exports.clearCompleted = async (req, res, next) => {
   try {
-    const [result] = await pool.query('DELETE FROM todos WHERE done = 1');
-    res.json({ ok: true, deletedCount: result.affectedRows });
+    const result = db.prepare('DELETE FROM todos WHERE done = 1').run();
+    res.json({ ok: true, deletedCount: result.changes });
   } catch (err) {
     next(err);
   }

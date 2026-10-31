@@ -1,7 +1,13 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const pool = require('./config/db');
+let database;
+try {
+  database = require('./config/db');
+} catch (err) {
+  console.error('Failed to initialize SQLite database:', err.message);
+  process.exit(1);
+}
 const todoRoutes = require('./routes/todoRoutes');
 
 const app = express();
@@ -22,13 +28,7 @@ app.use((err, req, res, _next) => {
 
 const port = process.env.PORT || 3000;
 
-pool.query('SELECT 1')
-  .then(() => {
-    app.listen(port, () => {
-      console.log(`🚀 To-do application running at http://localhost:${port}`);
-    });
-  })
-  .catch((err) => {
-    console.error('❌ Failed to connect to MariaDB/MySQL:', err.message);
-    process.exit(1);
-  });
+app.listen(port, () => {
+  console.log(`🚀 To-do application running at http://localhost:${port}`);
+  console.log(`SQLite database: ${database.databasePath}`);
+});

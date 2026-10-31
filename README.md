@@ -1,8 +1,8 @@
-# Modern To-Do Application (Node.js + MariaDB/MySQL)
+# Modern To-Do Application (Node.js + SQLite)
 
-A clean, modular, and responsive To-Do List application built with Express, MariaDB/MySQL, and modern vanilla JavaScript.
+A clean, modular, and responsive To-Do List application built with Express, SQLite, and modern vanilla JavaScript.
 
-## 🌟 Features
+## Features
 - **Task Management**: Create, toggle status, inline edit titles, change priority, and delete tasks.
 - **Priority Levels**: Support for `High`, `Medium`, and `Low` priority badges.
 - **Filtering & Search**: Filter tasks by status (`All`, `Active`, `Completed`) and priority (`High`, `Medium`, `Low`), with real-time keyword search.
@@ -12,12 +12,12 @@ A clean, modular, and responsive To-Do List application built with Express, Mari
 
 ---
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```text
 itp16_Project/
 ├── config/
-│   └── db.js                 # Database connection pool setup
+│   └── db.js                 # SQLite initialization
 ├── controllers/
 │   └── todoController.js     # Request validation & DB logic
 ├── routes/
@@ -28,57 +28,46 @@ itp16_Project/
 │   ├── js/
 │   │   └── app.js            # Frontend API client & interactive UI
 │   └── index.html            # Main HTML interface
-├── .env.example              # Environment variables template
-├── package.json              # Express & MariaDB dependencies
-├── schema.sql                # Database schema with indexes & priorities
+├── .env.example              # Optional database path and port
+├── package.json              # Express dependencies
+├── schema.sql                # SQLite schema with indexes
 └── server.js                 # Application entry point
 ```
 
----
-
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Prerequisites
-- **Node.js**: v18 or higher
-- **MariaDB** or **MySQL** server running
+- **Node.js**: v22.13.0 or higher
 
-### 2. Database Setup
-Run the SQL initialization script as a database administrator:
-```bash
-mariadb < schema.sql
-# or for MySQL:
-mysql -u root -p < schema.sql
-```
+No separate database server is needed. The app creates `data/todos.sqlite` and its tables automatically the first time it starts.
 
-### 3. Environment Configuration
-Copy `.env.example` to `.env` and fill in your database credentials:
+### 2. Optional Configuration
+Copy `.env.example` to `.env` to change the database file location or server port:
 ```bash
 cp .env.example .env
 ```
 Example `.env`:
 ```env
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=todo_user
-DB_PASSWORD=change_me
-DB_NAME=todo_app
+SQLITE_DB_PATH=./data/todos.sqlite
 PORT=3000
 ```
-If you use the XAMPP MySQL service configured on port `3307`, set `DB_PORT=3307` instead.
 
-### 4. Install Dependencies & Start Server
+### 3. Install Dependencies & Start Server
 ```bash
 npm install
 npm start
 ```
-The app will start at **http://localhost:3000**!
+The app will start at **http://localhost:3000**. Its startup message prints the path to the SQLite database file.
 
 ### Open in VS Code
 Select **Launch Task Master** in **Run and Debug** and press **F5**. This starts the Express server and opens the app at `http://localhost:3000` once it is ready. Do not open `public/index.html` directly (`file://`), because the browser cannot reach the `/api/todos` endpoint from a file URL.
 
----
+### Access the Database
+The database is the file `data/todos.sqlite` in the project folder. To view or edit it, open that file with a SQLite database viewer such as **DB Browser for SQLite**. You can also use a SQLite extension in VS Code. Stop the app before manually editing or copying the database file. The database is local and is ignored by Git.
 
-## 📡 REST API Endpoints
+The old MariaDB/MySQL database is not automatically copied into SQLite.
+
+## REST API Endpoints
 
 | Method   | Endpoint             | Description |
 | :------- | :------------------- | :---------- |
