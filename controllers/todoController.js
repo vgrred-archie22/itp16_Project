@@ -1,0 +1,154 @@
+const pool = require('../config/db');
+
+const VALID_PRIORITIES = ['low', 'medium', 'high'];
+
+exports.getTodos = async (req, res, next) => {
+  try {
+    const { status, priority, search } = req.query;
+    let query = 'SELECT id, title, done, priority, created_at, updated_at FROM todos WHERE 1=1';
+    const params = [];
+
+    if (status === 'active') {
+      query += ' AND done = 0';
+    } else if (status === 'done') {
+      query += ' AND done = 1';
+    }
+
+    if (priority && VALID_PRIORITIES.includes(priority.toLowerCase())) {
+      query += ' AND priority = ?';
+      params.push(priority.toLowerCase());
+    }
+
+    if (search && search.trim()) {
+      query += ' AND title LIKE ?';
+      params.push(`%${search.trim()}%`);
+    }
+
+    query += ` ORDER BY done ASC, CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 END, id DESC`;
+
+    const [rows] = await pool.query(query, params);
+
+    const todos = rows.map((row) => ({
+      ...row,
+      done: Boolean(row.done),
+    }));
+
+    res.json(todos);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.createTodo = async (req, res, next) => {
+  try {
+    const title = String(req.body.title || '').trim().slice(0, 255);
+    if (!title) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+
+    let priority = String(req.body.priority || 'medium').toLowerCase();
+    if (!VALID_PRIORITIES.includes(priority)) {
+      priority = 'medium';
+    }
+
+    const [result] = await pool.query(
+      'INSERT INTO todos (title, priority) VALUES (?, ?)',
+      [title, priority]
+    );
+
+    const [rows] = await pool.query(
+      'SELECT id, title, done, priority, created_at, updated_at FROM todos WHERE id = ?',
+      [result.insertId]
+    );
+
+    res.status(201).json({
+      ...rows[0],
+      done: Boolean(rows[0].done),
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.updateTodo = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) {
+      return res.status(400).json({ error: 'Invalid task ID' });
+    }
+
+    const [existing] = await pool.query('SELECT * FROM todos WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    const current = existing[0];
+    let newTitle = current.title;
+    let newDone = current.done;
+    let newPriority = current.priority;
+
+    if (req.body.title !== undefined) {
+      const trimmed = String(req.body.title).trim().slice(0, 255);
+      if (!trimmed) {
+        return res.status(400).json({ error: 'Title cannot be empty' });
+      }
+      newTitle = trimmed;
+    }
+
+    if (req.body.done !== undefined) {
+      newDone = req.body.done ? 1 : 0;
+    }
+
+    if (req.body.priority !== undefined) {
+      const prio = String(req.body.priority).toLowerCase();
+      if (!VALID_PRIORITIES.includes(prio)) {
+        return res.status(400).json({ error: 'Invalid priority value' });
+      }
+      newPriority = prio;
+    }
+
+    await pool.query(
+      'UPDATE todos SET title = ?, done = ?, priority = ? WHERE id = ?',
+      [newTitle, newDone, newPriority, id]
+    );
+
+    const [updatedRows] = await pool.query(
+      'SELECT id, title, done, priority, created_at, updated_at FROM todos WHERE id = ?',
+      [id]
+    );
+
+    res.json({
+      ...updatedRows[0],
+      done: Boolean(updatedRows[0].done),
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteTodo = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) {
+      return res.status(400).json({ error: 'Invalid task ID' });
+    }
+
+    const [result] = await pool.query('DELETE FROM todos WHERE id = ?', [id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    res.json({ ok: true, message: 'Task deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.clearCompleted = async (req, res, next) => {
+  try {
+    const [result] = await pool.query('DELETE FROM todos WHERE done = 1');
+    res.json({ ok: true, deletedCount: result.affectedRows });
+  } catch (err) {
+    next(err);
+  }
+};

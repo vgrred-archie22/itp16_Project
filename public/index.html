@@ -1,135 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>To-do list</title>
-<style>
-  :root {
-    --bg: #eef2f4; --card: #ffffff; --ink: #1c2b33; --muted: #6b7c85;
-    --line: #d9e1e5; --accent: #0f766e; --danger: #b42318;
-    color-scheme: light;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #12191d; --card: #1b252b; --ink: #e6eef1; --muted: #8fa1aa;
-            --line: #2c3a42; --accent: #2dd4bf; --danger: #f97066; color-scheme: dark; }
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
-         font: 16px/1.5 Georgia, "Times New Roman", serif; }
-  main { max-width: 560px; margin: 0 auto; padding: 48px 16px; }
-  h1 { font-size: 2rem; margin: 0 0 4px; letter-spacing: -0.01em; }
-  #count { margin: 0 0 24px; color: var(--muted); font-family: system-ui, sans-serif; font-size: .9rem; }
-  form { display: flex; gap: 8px; margin-bottom: 16px; }
-  input[type=text] { flex: 1; padding: 12px 14px; font: inherit; color: var(--ink);
-         background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
-  button { font: 600 .9rem system-ui, sans-serif; cursor: pointer; border-radius: 8px; }
-  .add { padding: 0 18px; background: var(--accent); color: var(--bg); border: 0; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .filters { display: flex; gap: 4px; margin-bottom: 8px; }
-  .filters button { background: none; border: 1px solid transparent; color: var(--muted); padding: 6px 12px; }
-  .filters button[aria-pressed=true] { color: var(--ink); border-color: var(--line); background: var(--card); }
-  ul { list-style: none; margin: 0; padding: 0; background: var(--card);
-       border: 1px solid var(--line); border-radius: 10px; }
-  li { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
-  li:last-child { border-bottom: 0; }
-  li input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
-  li span { flex: 1; overflow-wrap: anywhere; }
-  li.done span { color: var(--muted); text-decoration: line-through; }
-  li .del { background: none; border: 0; color: var(--muted); padding: 4px 8px; }
-  li .del:hover { color: var(--danger); }
-  .empty { padding: 28px 14px; text-align: center; color: var(--muted); }
-  .foot { margin-top: 12px; text-align: right; }
-  .clear { background: none; border: 0; color: var(--muted); }
-  .clear:hover { color: var(--danger); }
-  #error { color: var(--danger); font-family: system-ui, sans-serif; font-size: .9rem; min-height: 1.4em; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Master - To-Do App</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<main>
-  <h1>To-do list</h1>
-  <p id="count"></p>
-  <form id="form">
-    <input type="text" id="title" placeholder="What needs doing?" maxlength="255" autocomplete="off" required aria-label="New task">
-    <button class="add" type="submit">Add task</button>
-  </form>
-  <p id="error" role="alert"></p>
-  <div class="filters" role="group" aria-label="Filter tasks">
-    <button data-f="all" aria-pressed="true">All</button>
-    <button data-f="active" aria-pressed="false">Active</button>
-    <button data-f="done" aria-pressed="false">Done</button>
+  <div class="app-container">
+    <header>
+      <div class="brand">
+        <span style="font-size: 1.8rem;">✅</span>
+        <h1>Task Master</h1>
+      </div>
+      <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌙 Dark</button>
+    </header>
+
+    <div id="alert-box" class="alert alert-error" role="alert"></div>
+
+    <main class="card">
+      <form id="task-form" class="todo-form">
+        <input 
+          type="text" 
+          id="task-title" 
+          class="input-field" 
+          placeholder="What needs to be done?" 
+          maxlength="255" 
+          autocomplete="off" 
+          required 
+          aria-label="New task title"
+        >
+        <select id="task-priority" class="select-field" aria-label="Task priority">
+          <option value="medium" selected>Priority: Medium</option>
+          <option value="high">Priority: High</option>
+          <option value="low">Priority: Low</option>
+        </select>
+        <button type="submit" class="btn btn-primary">➕ Add</button>
+      </form>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <input 
+            type="text" 
+            id="search-input" 
+            class="input-field" 
+            placeholder="🔍 Search tasks..." 
+            aria-label="Search tasks"
+          >
+        </div>
+
+        <div class="filters-group" role="group" aria-label="Status filters">
+          <button class="filter-btn active" data-status="all">All</button>
+          <button class="filter-btn" data-status="active">Active</button>
+          <button class="filter-btn" data-status="done">Completed</button>
+        </div>
+
+        <select id="filter-priority" class="select-field" aria-label="Filter by priority">
+          <option value="all" selected>All Priorities</option>
+          <option value="high">High Priority</option>
+          <option value="medium">Medium Priority</option>
+          <option value="low">Low Priority</option>
+        </select>
+      </div>
+
+      <div class="status-bar">
+        <span id="stats-count" class="stats-count">0 active • 0 completed</span>
+        <button id="clear-completed" class="btn btn-danger">Clear Completed</button>
+      </div>
+
+      <ul id="task-list" class="todo-list"></ul>
+    </main>
+
+    <footer>
+      <p>Tip: Double-click any task title to edit it inline.</p>
+    </footer>
   </div>
-  <ul id="list"></ul>
-  <div class="foot"><button class="clear" id="clear">Clear completed</button></div>
-</main>
-<script>
-let todos = [], filter = 'all';
-const $ = (id) => document.getElementById(id);
 
-async function api(url, method = 'GET', body) {
-  const res = await fetch(url, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Request failed');
-  return res.json();
-}
-
-async function load() {
-  try { todos = await api('/api/todos'); $('error').textContent = ''; }
-  catch (e) { $('error').textContent = 'Could not load tasks: ' + e.message; }
-  render();
-}
-
-function render() {
-  const list = $('list');
-  list.replaceChildren();
-  const shown = todos.filter((t) => filter === 'all' || (filter === 'done') === t.done);
-  const open = todos.filter((t) => !t.done).length;
-  $('count').textContent = `${open} open, ${todos.length - open} done`;
-
-  if (!shown.length) {
-    const li = document.createElement('li');
-    li.className = 'empty';
-    li.textContent = todos.length ? 'Nothing in this view.' : 'No tasks yet. Add your first one above.';
-    list.append(li);
-    return;
-  }
-  for (const t of shown) {
-    const li = document.createElement('li');
-    if (t.done) li.className = 'done';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox'; cb.checked = t.done; cb.setAttribute('aria-label', 'Mark done');
-    cb.onchange = () => act(() => api(`/api/todos/${t.id}`, 'PATCH', { done: cb.checked }));
-    const span = document.createElement('span');
-    span.textContent = t.title;
-    const del = document.createElement('button');
-    del.className = 'del'; del.textContent = 'Delete';
-    del.onclick = () => act(() => api(`/api/todos/${t.id}`, 'DELETE'));
-    li.append(cb, span, del);
-    list.append(li);
-  }
-}
-
-async function act(fn) {
-  try { await fn(); await load(); }
-  catch (e) { $('error').textContent = e.message; }
-}
-
-$('form').onsubmit = (e) => {
-  e.preventDefault();
-  const title = $('title').value.trim();
-  if (!title) return;
-  act(() => api('/api/todos', 'POST', { title })).then(() => { $('title').value = ''; $('title').focus(); });
-};
-$('clear').onclick = () => act(() => api('/api/todos/completed', 'DELETE'));
-document.querySelectorAll('.filters button').forEach((b) => b.onclick = () => {
-  filter = b.dataset.f;
-  document.querySelectorAll('.filters button').forEach((x) => x.setAttribute('aria-pressed', x === b));
-  render();
-});
-load();
-</script>
+  <script src="js/app.js"></script>
 </body>
 </html>
